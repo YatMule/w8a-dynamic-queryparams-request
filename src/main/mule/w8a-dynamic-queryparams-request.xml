@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4d773e81-7b35-44f8-b78b-b6ea0a1f1fc6" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="w8a-dynamic-queryparams-requestFlow" doc:id="77799e43-383b-4d87-afe9-20d9d79eb9a6" >
+		<http:listener doc:name="Listener" doc:id="be3df639-8762-4803-8811-8ac869d21629" path="get-data" config-ref="HTTP_Listener_config"/>
+		<set-variable value="#[attributes.queryParams.name]" doc:name="Set Variable" doc:id="3d5a51f8-7cb8-4892-ac24-47e0bad5b432" variableName="name"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="f6ca3a9a-b460-4858-814c-5a45583e7d22" >
+			<route >
+				<http:request method="GET" doc:name="Request Genderize" doc:id="e4bbc206-ada9-4cfa-88f4-5f313494783b" url='#["https://api.genderize.io/?name=" ++ vars.name]'/>
+			</route>
+			<route >
+				<http:request method="GET" doc:name="Request Nationalize" doc:id="e848d858-3db4-40e8-a8f1-c5b63423669d" url='#["https://api.nationalize.io/?name=" ++ vars.name]'/>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="combine" doc:id="b117ed56-0e23-4701-b5dd-86d7dddfd467" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Gender": payload."0".payload,
+	"Nationality": payload."1".payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
